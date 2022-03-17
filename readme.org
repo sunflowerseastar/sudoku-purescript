@@ -1,0 +1,14 @@
+* sudoku-purescript
+
+Port of Richard Bird's sudoku implementation in [[https://www.cambridge.org/core/books/thinking-functionally-with-haskell/79F91D976F0C7229082325B41824EBBC#][Thinking Functionally with Haskell]].
+
+* quick start
+
+#+begin_src sh
+npm install
+
+spago build --watch
+
+# other terminal
+npm start # localhost:8000
+#+end_src

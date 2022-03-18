@@ -1,18 +1,16 @@
 module Main where
 
 import Prelude
-import Data.Array (mapWithIndex)
-import Data.Maybe (Maybe)
--- import Data.Tuple
--- import Data.Traversable (for)
+import Data.Array (mapWithIndex, modifyAt, updateAt)
+import Data.Int (fromString)
+import Data.Maybe (Maybe, fromMaybe)
 import Effect (Effect)
 import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class.Console (log)
--- import Elmish (Transition, Dispatch, ReactElement, fork, forkVoid, (<?|))
-import Elmish (Transition, Dispatch, ReactElement, fork, forkVoid)
-import Elmish.Boot (defaultMain) -- We'll need this in a moment
-import Elmish.Foreign (readForeign) -- We'll need this in a moment
-import Elmish.HTML.Styled as H  -- This is more convenient to import qualified
+import Elmish (Transition, Dispatch, ReactElement, fork, forkVoid, (<?|))
+import Elmish.Boot (defaultMain)
+import Elmish.Foreign (readForeign)
+import Elmish.HTML.Styled as H
 import Elmish.React.DOM as R
 import Foreign (Foreign)
 
@@ -20,6 +18,7 @@ data Message
   = ButtonClicked
   | WordChanged String
   | TimeoutElapsed
+  | UpdateBoard Int Int Int
 
 type Matrix a
   = Array (GridRow a)
@@ -72,12 +71,22 @@ init =
     }
 
 update :: State -> Message -> Transition Message State
+update state (UpdateBoard x y newValue) =
+  pure
+    state
+      { board =
+        state.board
+          # modifyAt y (\row -> fromMaybe row (updateAt x newValue row))
+          # fromMaybe state.board
+      }
+
 update state ButtonClicked = do
   forkVoid $ log "Button clicked"
   fork do
     delay $ Milliseconds 1000.0
-    pure TimeoutElapsed
-  pure state { word = "Elmish", board = b3b }
+    pure (UpdateBoard 0 0 9)
+  -- pure TimeoutElapsed
+  pure state { word = "Elmish" }
 
 update state (WordChanged s) = pure state { word = s }
 
@@ -88,18 +97,19 @@ eventTargetValue f =
   (readForeign f :: _ { target :: { value :: String } })
     <#> _.target.value
 
-squares :: Int -> Int -> Int -> ReactElement
-squares y x s = H.div_ "square" { style: H.css { gridArea: (show (y + 1)) <> " / " <> (show (x + 1)) <> " / auto / auto" } } (H.text (show x <> show y <> show s))
+squares :: Dispatch Message -> Int -> Int -> Int -> ReactElement
+squares dispatch y x s =
+  H.div_ "square" { style: H.css { gridArea: (show (y + 1)) <> " / " <> (show (x + 1)) <> " / auto / auto" } }
+    ( H.input_ ""
+        { type: "text"
+        , value: show s
+        , onChange: dispatch <?| \f -> UpdateBoard x y <$> (eventTargetValue f >>= fromString)
+        }
+    )
 
-squares2 :: Int -> Array Int -> ReactElement
-squares2 y ss = R.fragment $ mapWithIndex (squares y) ss
+squares2 :: Dispatch Message -> Int -> Array Int -> ReactElement
+squares2 dispatch y ss = R.fragment $ mapWithIndex (squares dispatch y) ss
 
--- mapWithIndex squares ss
--- H.input_ "d-block"
---   { type: "text"
---   , value: state.word
---   , onChange: dispatch <?| \f -> WordChanged <$> eventTargetValue f
---   }
 view :: State -> Dispatch Message -> ReactElement
 view state dispatch =
   H.div "board-container"
@@ -109,7 +119,7 @@ view state dispatch =
         , H.text "! "
         ]
     , H.button_ "btn btn-primary mt-3" { onClick: dispatch ButtonClicked } "Click me!"
-    , H.div "board" $ state.board # mapWithIndex squares2
+    , H.div "board" $ state.board # mapWithIndex (squares2 dispatch)
     ]
 
 main :: Effect Unit

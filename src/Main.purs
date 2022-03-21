@@ -59,7 +59,7 @@ type State
   = { board :: Grid }
 
 init :: Transition Message State
-init = pure { board: b3 }
+init = pure { board: b3b }
 
 update :: State -> Message -> Transition Message State
 update state (UpdateBoard x y newValue) =
@@ -85,7 +85,7 @@ squares dispatch y x s =
   H.div_ "square" { style: H.css { gridArea: (show (y + 1)) <> " / " <> (show (x + 1)) <> " / auto / auto" } }
     ( H.input_ ""
         { type: "text"
-        , value: show s
+        , value: if s == 0 then "" else show s
         , onChange: dispatch <?| \f -> UpdateBoard x y <$> (eventTargetValue f >>= fromString)
         }
     )
@@ -101,11 +101,7 @@ view state dispatch =
         ]
     , H.div "button-container"
         [ H.div "button-indicator"
-            [ H.button_
-                "btn btn-primary mt-3"
-                { onClick: dispatch ButtonClicked }
-                "solve"
-            ]
+            [ H.button_ "" { onClick: dispatch ButtonClicked } "solve" ]
         ]
     ]
 

@@ -5,9 +5,8 @@ import Data.Array (mapWithIndex, modifyAt, updateAt)
 import Data.Int (fromString)
 import Data.Maybe (Maybe, fromMaybe)
 import Effect (Effect)
-import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class.Console (log)
-import Elmish (Transition, Dispatch, ReactElement, fork, forkVoid, (<?|))
+import Elmish (Transition, Dispatch, ReactElement, forkVoid, (<?|))
 import Elmish.Boot (defaultMain)
 import Elmish.Foreign (readForeign)
 import Elmish.HTML.Styled as H
@@ -16,8 +15,6 @@ import Foreign (Foreign)
 
 data Message
   = ButtonClicked
-  | WordChanged String
-  | TimeoutElapsed
   | UpdateBoard Int Int Int
 
 type Matrix a
@@ -59,16 +56,10 @@ b3b =
   ]
 
 type State
-  = { word :: String
-    , board :: Grid
-    }
+  = { board :: Grid }
 
 init :: Transition Message State
-init =
-  pure
-    { word: "World"
-    , board: b3
-    }
+init = pure { board: b3 }
 
 update :: State -> Message -> Transition Message State
 update state (UpdateBoard x y newValue) =
@@ -82,15 +73,7 @@ update state (UpdateBoard x y newValue) =
 
 update state ButtonClicked = do
   forkVoid $ log "Button clicked"
-  fork do
-    delay $ Milliseconds 1000.0
-    pure (UpdateBoard 0 0 9)
-  -- pure TimeoutElapsed
-  pure state { word = "Elmish" }
-
-update state (WordChanged s) = pure state { word = s }
-
-update state TimeoutElapsed = pure state { word = state.word <> " after a while" }
+  pure state
 
 eventTargetValue :: Foreign -> Maybe String
 eventTargetValue f =
@@ -112,14 +95,18 @@ squares2 dispatch y ss = R.fragment $ mapWithIndex (squares dispatch y) ss
 
 view :: State -> Dispatch Message -> ReactElement
 view state dispatch =
-  H.div "board-container"
-    [ H.div ""
-        [ H.text ":: Hello, "
-        , H.strong "" state.word
-        , H.text "! "
+  H.div "main"
+    [ H.div "board-container"
+        [ H.div "board constrain-width" $ state.board # mapWithIndex (squares2 dispatch)
         ]
-    , H.button_ "btn btn-primary mt-3" { onClick: dispatch ButtonClicked } "Click me!"
-    , H.div "board" $ state.board # mapWithIndex (squares2 dispatch)
+    , H.div "button-container"
+        [ H.div "button-indicator"
+            [ H.button_
+                "btn btn-primary mt-3"
+                { onClick: dispatch ButtonClicked }
+                "solve"
+            ]
+        ]
     ]
 
 main :: Effect Unit

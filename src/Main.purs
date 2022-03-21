@@ -29,6 +29,10 @@ type Grid
 type Digit
   = Int
 
+solve :: Grid -> Grid
+solve x = x
+
+
 b3 :: Grid
 b3 =
   [ [ 8, 2, 7, 1, 5, 4, 3, 9, 6 ]
@@ -72,7 +76,7 @@ update state (UpdateBoard x y newValue) =
       }
 
 update state ButtonClicked = do
-  forkVoid $ log "Button clicked"
+  forkVoid $ log ("Button clicked :: " <> (show $ solve state.board))
   pure state
 
 eventTargetValue :: Foreign -> Maybe String

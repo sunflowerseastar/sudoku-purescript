@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-import Data.Array (cons, mapWithIndex, modifyAt, updateAt, uncons, (..))
+import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, take, uncons, updateAt, zipWith, (:), (..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Effect (Effect)
@@ -13,9 +13,9 @@ import Elmish.HTML.Styled as H
 import Elmish.React.DOM as R
 import Foreign (Foreign)
 
-data Message
-  = ButtonClicked
-  | UpdateBoard Int Int Int
+-- ---------
+-- solver
+-- ---------
 
 type Matrix a
   = Array (GridRow a)
@@ -29,53 +29,13 @@ type Grid
 type Digit
   = Int
 
-boxsize :: Int
-boxsize = 3
-
-digits :: Array Digit
-digits = 1 .. (boxsize * boxsize)
-
-blank :: Digit -> Boolean
-blank = (==) 0
-
-choices :: Grid -> Matrix (Array Digit)
-choices = map (map choice)
-
--- choice d = if blank d then digits else [d]
-choice :: Int -> Array Int
-choice d = if blank d then digits else [d]
-
-bx :: Array (Array Int)
-bx = [[1,2],[3,4]]
-bx2 :: Array (Array Int)
-bx2 = [[1,0],[3,4]]
-
-cp :: forall a. Array (Array a) -> Array (Array a)
-cp matrix = case uncons matrix of
-  Just { head: xs, tail: xss } -> do
-    x <- xs
-    ys <- cp xss
-    pure (cons x ys)
-  Nothing -> [[]]
-
-
-factors :: Int -> Array (Array Int)
-factors n = do
-  i <- 1 .. n
-  j <- i .. n
-  pure [ i, j ]
-
-expand :: Matrix (Array Digit) -> Array Grid
-expand = cp <<< map cp
-
-completions :: Grid -> Array Grid
-completions = expand <<< choices
-
-
-
-solve :: Grid -> Grid
-solve x = x
-
+b2 :: Grid
+b2 =
+  [ [ 1, 2, 4, 3 ]
+  , [ 3, 4, 2, 1 ]
+  , [ 2, 1, 3, 4 ]
+  , [ 4, 0, 1, 2 ]
+  ]
 
 b3 :: Grid
 b3 =
@@ -103,8 +63,99 @@ b3b =
   , [ 2, 3, 9, 8, 4, 1, 5, 6, 0 ]
   ]
 
+b5 :: Grid
+b5 = [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+boxsize :: Int
+boxsize = 2
+
+-- boxsize = 3
+digits :: Array Digit
+digits = 1 .. (boxsize * boxsize)
+
+blank :: Digit -> Boolean
+blank = (==) 0
+
+choices :: Grid -> Matrix (Array Digit)
+choices = map (map choice)
+
+-- choice d = if blank d then digits else [d]
+choice :: Int -> Array Int
+choice d = if blank d then digits else [ d ]
+
+bx :: Array (Array Int)
+bx = [ [ 1, 2 ], [ 3, 4 ] ]
+
+bx2 :: Array (Array Int)
+bx2 = [ [ 1, 0 ], [ 3, 4 ] ]
+
+cp :: forall a. Array (Array a) -> Array (Array a)
+cp matrix = case uncons matrix of
+  Just { head: xs, tail: xss } -> do
+    x <- xs
+    ys <- cp xss
+    pure (cons x ys)
+  Nothing -> [ [] ]
+
+factors :: Int -> Array (Array Int)
+factors n = do
+  i <- 1 .. n
+  j <- i .. n
+  pure [ i, j ]
+
+expand :: Matrix (Array Digit) -> Array Grid
+expand = cp <<< map cp
+
+completions :: Grid -> Array Grid
+completions = expand <<< choices
+
+nodups :: forall a. Eq a => Array a -> Boolean
+nodups arr = case uncons arr of
+  Just { head: x, tail: xs } -> all (_ /= x) xs
+  Nothing -> true
+
+rows :: forall a. Matrix a -> Matrix a
+rows = identity
+
+cols :: forall a. Matrix a -> Matrix a
+cols arr = case uncons arr of
+  Just { head: xs, tail } -> case length tail > 0 of
+    true -> zipWith (:) xs (cols tail)
+    false -> do
+      x <- xs
+      pure [ x ]
+  Nothing -> [ [] ]
+
+group :: forall a. Array a -> Array (Array a)
+group [] = []
+
+group xs = take boxsize xs : group (drop boxsize xs)
+
+ungroup :: forall a. Array (Array a) -> Array a
+ungroup = concat
+
+boxs :: forall a. Matrix a -> Matrix a
+boxs = map ungroup <<< ungroup <<< map cols <<< group <<< map group
+
+valid :: Grid -> Boolean
+valid g =
+  all nodups (rows g)
+    && all nodups (cols g)
+    && all nodups (boxs g)
+
+solve :: Grid -> Array Grid
+solve = filter valid <<< expand <<< choices
+
+-- ---------
+-- UI
+-- ---------
+
 type State
   = { board :: Grid }
+
+data Message
+  = ButtonClicked
+  | UpdateBoard Int Int Int
 
 init :: Transition Message State
 init = pure { board: b3b }

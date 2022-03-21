@@ -1,9 +1,9 @@
 module Main where
 
 import Prelude
-import Data.Array (mapWithIndex, modifyAt, updateAt)
+import Data.Array (cons, mapWithIndex, modifyAt, updateAt, uncons, (..))
 import Data.Int (fromString)
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Elmish (Transition, Dispatch, ReactElement, forkVoid, (<?|))
@@ -28,6 +28,50 @@ type Grid
 
 type Digit
   = Int
+
+boxsize :: Int
+boxsize = 3
+
+digits :: Array Digit
+digits = 1 .. (boxsize * boxsize)
+
+blank :: Digit -> Boolean
+blank = (==) 0
+
+choices :: Grid -> Matrix (Array Digit)
+choices = map (map choice)
+
+-- choice d = if blank d then digits else [d]
+choice :: Int -> Array Int
+choice d = if blank d then digits else [d]
+
+bx :: Array (Array Int)
+bx = [[1,2],[3,4]]
+bx2 :: Array (Array Int)
+bx2 = [[1,0],[3,4]]
+
+cp :: forall a. Array (Array a) -> Array (Array a)
+cp matrix = case uncons matrix of
+  Just { head: xs, tail: xss } -> do
+    x <- xs
+    ys <- cp xss
+    pure (cons x ys)
+  Nothing -> [[]]
+
+
+factors :: Int -> Array (Array Int)
+factors n = do
+  i <- 1 .. n
+  j <- i .. n
+  pure [ i, j ]
+
+expand :: Matrix (Array Digit) -> Array Grid
+expand = cp <<< map cp
+
+completions :: Grid -> Array Grid
+completions = expand <<< choices
+
+
 
 solve :: Grid -> Grid
 solve x = x

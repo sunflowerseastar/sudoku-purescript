@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, take, uncons, updateAt, zipWith, (:), (..))
+import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, nub, take, uncons, updateAt, zipWith, (:), (..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Effect (Effect)
@@ -27,6 +27,19 @@ type Grid
 
 type Digit
   = Int
+
+b1 :: Grid
+b1 =
+  [ [ 0, 9, 0, 0, 0, 0, 0, 4, 0 ]
+  , [ 0, 6, 4, 2, 0, 5, 7, 8, 0 ]
+  , [ 0, 0, 8, 0, 4, 0, 9, 0, 0 ]
+  , [ 4, 8, 3, 0, 6, 0, 2, 5, 1 ]
+  , [ 9, 0, 0, 0, 0, 0, 0, 0, 7 ]
+  , [ 2, 5, 7, 0, 8, 0, 4, 6, 9 ]
+  , [ 0, 0, 9, 0, 1, 0, 5, 0, 0 ]
+  , [ 0, 3, 1, 8, 0, 2, 6, 9, 0 ]
+  , [ 0, 4, 0, 0, 0, 0, 0, 1, 0 ]
+  ]
 
 b2 :: Grid
 b2 =
@@ -66,7 +79,7 @@ b5 :: Grid
 b5 = [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
 
 boxsize :: Int
-boxsize = 2
+boxsize = 3
 
 -- boxsize = 3
 digits :: Array Digit
@@ -142,23 +155,6 @@ valid g =
     && all nodups (cols g)
     && all nodups (boxs g)
 
--- result of 5.1 Specification
-solve :: Grid -> Array Grid
-solve = filter valid <<< expand <<< choices
-
--- TODO translate remove, pruneRow, pruneBy, prune, notElem, many, add new solve
--- remove [] [] => []
--- remove [] [0] => [0]
--- remove [] [1] => [1]
--- remove [1] [] => []
--- remove [1,3] [0] => [0]
--- remove [1,3] [1] => [1]
--- remove [1,3] [1,3] => []
--- remove [0,1,3] [1,2,3] => [2]
--- remove [0,3] [1,3,4] => [1,4]
--- remove :: [Digit] -> [Digit] -> [Digit]
--- remove ds [x] = [x]
--- remove ds xs = filter (`notElem` ds) xs
 remove :: Array Digit -> Array Digit -> Array Digit
 remove singletons xs =
   if (length xs == 1) then
@@ -166,23 +162,26 @@ remove singletons xs =
   else
     filter (\x -> notElem x singletons) xs
 
--- pruneRow [[0],[1,2],[3],[1,3,4],[5,6]] => [[0],[1,2],[3],[1,4],[5,6]]
--- pruneRow [[6],[3,6],[3],[1,3,4],[4]] => [[6],[],[3],[1],[4]]
--- remove the row's singletons ("fixed" entries) from the row's lists
--- pruneRow :: Row [Digit] -> Row [Digit]
--- pruneRow row = map (remove fixed) row
---   where fixed = [d | [d] <- row]
--- pruneBy f = f . map pruneRow . f
--- prune :: Matrix [Digit] -> Matrix [Digit]
--- prune = pruneBy boxs . pruneBy cols . pruneBy rows
--- notElem :: (Eq a) => a -> [a] -> Bool
--- notElem x xs = all (/= x) xs
--- many :: (Eq a) => (a -> a) -> a -> a
--- many f x = if x == y then x else many f y
---            where y = f x
--- result of 5.3 Pruning the matrix of choices
--- solve :: Grid -> Array Grid
--- solve = filter valid <<< expand <<< many prune <<< choices
+pruneRow :: Array (Array Digit) -> Array (Array Digit)
+pruneRow row = map (remove singletons) row
+  where
+  singletons = row # filter (\x -> length x == 1) # concat # nub
+
+pruneBy :: (Array (Matrix Int) -> Array (Matrix Int)) -> Array (Matrix Int) -> Array (Matrix Int)
+pruneBy f = f <<< map pruneRow <<< f
+
+prune :: Matrix (Array Digit) -> Matrix (Array Digit)
+prune = pruneBy boxs <<< pruneBy cols <<< pruneBy rows
+
+many :: forall a. (Eq a) => (a -> a) -> a -> a
+many f x = if x == y then x else many f y
+  where
+  y = f x
+
+solve :: Grid -> Array Grid
+-- solve = filter valid <<< expand <<< choices -- 5.1 Specificatin
+solve = filter valid <<< expand <<< many prune <<< choices -- 5.3 Pruning the matrix of choices
+
 -- ---------
 -- UI
 -- ---------

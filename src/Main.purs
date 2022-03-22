@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, take, uncons, updateAt, zipWith, (:), (..))
+import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, take, uncons, updateAt, zipWith, (:), (..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Effect (Effect)
@@ -16,7 +16,6 @@ import Foreign (Foreign)
 -- ---------
 -- solver
 -- ---------
-
 type Matrix a
   = Array (GridRow a)
 
@@ -143,13 +142,50 @@ valid g =
     && all nodups (cols g)
     && all nodups (boxs g)
 
+-- result of 5.1 Specification
 solve :: Grid -> Array Grid
 solve = filter valid <<< expand <<< choices
 
+-- TODO translate remove, pruneRow, pruneBy, prune, notElem, many, add new solve
+-- remove [] [] => []
+-- remove [] [0] => [0]
+-- remove [] [1] => [1]
+-- remove [1] [] => []
+-- remove [1,3] [0] => [0]
+-- remove [1,3] [1] => [1]
+-- remove [1,3] [1,3] => []
+-- remove [0,1,3] [1,2,3] => [2]
+-- remove [0,3] [1,3,4] => [1,4]
+-- remove :: [Digit] -> [Digit] -> [Digit]
+-- remove ds [x] = [x]
+-- remove ds xs = filter (`notElem` ds) xs
+remove :: Array Digit -> Array Digit -> Array Digit
+remove singletons xs =
+  if (length xs == 1) then
+    xs
+  else
+    filter (\x -> notElem x singletons) xs
+
+-- pruneRow [[0],[1,2],[3],[1,3,4],[5,6]] => [[0],[1,2],[3],[1,4],[5,6]]
+-- pruneRow [[6],[3,6],[3],[1,3,4],[4]] => [[6],[],[3],[1],[4]]
+-- remove the row's singletons ("fixed" entries) from the row's lists
+-- pruneRow :: Row [Digit] -> Row [Digit]
+-- pruneRow row = map (remove fixed) row
+--   where fixed = [d | [d] <- row]
+-- pruneBy f = f . map pruneRow . f
+-- prune :: Matrix [Digit] -> Matrix [Digit]
+-- prune = pruneBy boxs . pruneBy cols . pruneBy rows
+-- notElem :: (Eq a) => a -> [a] -> Bool
+-- notElem x xs = all (/= x) xs
+-- many :: (Eq a) => (a -> a) -> a -> a
+-- many f x = if x == y then x else many f y
+--            where y = f x
+-- result of 5.3 Pruning the matrix of choices
+-- solve :: Grid -> Array Grid
+-- solve = filter valid <<< expand <<< many prune <<< choices
 -- ---------
 -- UI
 -- ---------
-
 type State
   = { board :: Grid }
 

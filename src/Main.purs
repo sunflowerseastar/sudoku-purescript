@@ -178,9 +178,45 @@ many f x = if x == y then x else many f y
   where
   y = f x
 
+-- TODO add single, expand1, counts, complete, safe, ok, extract, search
+-- single :: [a] -> Bool
+-- single [_] = True
+-- single _ = False
+
+-- expand1 :: Matrix [Digit] -> [Matrix [Digit]]
+-- expand1 rows
+--   = [rows1 ++ [row1 ++ [c]:row2] ++ rows2 | c <- cs]
+--     where
+--       (rows1, row:rows2) = break (any smallest) rows
+--       (row1, cs:row2)    = break smallest row
+--       smallest cs        = length cs == n
+--       n                  = minimum (counts rows)
+
+-- counts = filter (/= 1) . map length . concat
+
+-- complete :: Matrix [Digit] -> Bool
+-- complete = all (all single)
+
+-- safe :: Matrix [Digit] -> Bool
+-- safe cm = all ok (rows cm) &&
+--           all ok (cols cm) &&
+--           all ok (boxs cm)
+
+-- ok row = nodups [x | [x] <- row]
+
+-- extract :: Matrix [Digit] -> Grid
+-- extract = map (map head)
+
+-- search cm
+--   | not (safe pm) = []
+--   | complete pm = [extract pm]
+--   | otherwise = concat (map search (expand1 pm))
+--   where pm = many prune cm
+
 solve :: Grid -> Array Grid
--- solve = filter valid <<< expand <<< choices -- 5.1 Specificatin
+-- solve = filter valid <<< expand <<< choices -- 5.1 Specification
 solve = filter valid <<< expand <<< many prune <<< choices -- 5.3 Pruning the matrix of choices
+-- solve = search . choices -- 5.4 Expanding a single cell
 
 -- ---------
 -- UI

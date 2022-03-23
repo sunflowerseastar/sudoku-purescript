@@ -2,6 +2,7 @@ module Main where
 
 import Prelude
 import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, nub, take, uncons, updateAt, zipWith, (:), (..))
+import Data.Foldable (minimum)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Effect (Effect)
@@ -79,7 +80,7 @@ b5 :: Grid
 b5 = [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
 
 boxsize :: Int
-boxsize = 3
+boxsize = 2
 
 -- boxsize = 3
 digits :: Array Digit
@@ -155,9 +156,15 @@ valid g =
     && all nodups (cols g)
     && all nodups (boxs g)
 
+-- single :: [a] -> Bool
+-- single [_] = True
+-- single _ = False
+single :: forall a. (Array a) -> Boolean
+single xs = length xs == 1
+
 remove :: Array Digit -> Array Digit -> Array Digit
 remove singletons xs =
-  if (length xs == 1) then
+  if single xs then
     xs
   else
     filter (\x -> notElem x singletons) xs
@@ -178,21 +185,48 @@ many f x = if x == y then x else many f y
   where
   y = f x
 
--- TODO add single, expand1, counts, complete, safe, ok, extract, search
--- single :: [a] -> Bool
--- single [_] = True
--- single _ = False
+-- TODO add expand1, complete, safe, ok, extract, search
+
+-- c = [[[0],[1,2],[3],[1,3,4],[5,6]],[[0],[1,2],[3],[1,3,4],[5,6]]]
+-- counts c => [2,3,2,2,3,2]
+counts :: Array (Array (Array Int)) -> Array Int
+counts = filter (\x -> x /= 1) <<< map length <<< concat
+
+e1 rows = do
+  n <- rows # counts
+  pure n
+  -- n <- rows >>> counts >>> minimum
+  -- n <- counts rows # minimum
+  -- n <- pure rows <*> counts <*> minimum <*> fromMaybe 0
+  -- pure n
+
+
+-- prelude
+-- break :: (a -> Bool) -> [a] -> ([a],[a])
+-- break p = span (not . p)
+-- break even [1, 3, 7, 6, 2, 3, 5] => ([1, 3, 7], [6, 2, 3, 5])
 
 -- expand1 :: Matrix [Digit] -> [Matrix [Digit]]
 -- expand1 rows
+--   = [rows1 ++ [row1 ++ [c]:row2] ++ rows2 | c <- choices]
+--     where
+--       (rows1, row:rows2) = break (any smallest) rows
+--       (row1, choices:row2)    = break smallest row
+--       smallest choices        = length choices == n
+--       n                  = minimum (counts rows)
+-- expand1 rows = do
+--   n <-
+--   c <- cs
+--   pure c
+--     where
+--       cs = [1,2]
+--       smallest cs        = length cs == n
+--       n                  = minimum (counts rows)
+
 --   = [rows1 ++ [row1 ++ [c]:row2] ++ rows2 | c <- cs]
 --     where
 --       (rows1, row:rows2) = break (any smallest) rows
 --       (row1, cs:row2)    = break smallest row
---       smallest cs        = length cs == n
---       n                  = minimum (counts rows)
-
--- counts = filter (/= 1) . map length . concat
 
 -- complete :: Matrix [Digit] -> Bool
 -- complete = all (all single)

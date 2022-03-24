@@ -80,7 +80,7 @@ b5 :: Grid
 b5 = [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
 
 boxsize :: Int
-boxsize = 2
+boxsize = 3
 
 -- boxsize = 3
 digits :: Array Digit
@@ -165,10 +165,13 @@ remove singletons xs =
   else
     filter (\x -> notElem x singletons) xs
 
+singletonsFromArr :: Array (Array Digit) -> Array Digit
+singletonsFromArr arr = arr # filter (\x -> length x == 1) # concat # nub
+
 pruneRow :: Array (Array Digit) -> Array (Array Digit)
-pruneRow row = map (remove singletons) row
+pruneRow row = map (remove singletonsFromArrArr) row
   where
-  singletons = row # filter (\x -> length x == 1) # concat # nub
+  singletonsFromArrArr = singletonsFromArr row
 
 pruneBy :: (Array (Matrix Int) -> Array (Matrix Int)) -> Array (Matrix Int) -> Array (Matrix Int)
 pruneBy f = f <<< map pruneRow <<< f
@@ -181,7 +184,6 @@ many f x = if x == y then x else many f y
   where
   y = f x
 
--- TODO add expand1, complete, safe, ok, extract, search
 -- counts [[[0],[1,2],[3],[1,3,4],[5,6]],[[0],[1,2],[3],[1,3,4],[5,6]]] => [2,3,2,2,3,2]
 counts :: Array (Array (Array Int)) -> Array Int
 counts = filter (\x -> x /= 1) <<< map length <<< concat
@@ -216,20 +218,38 @@ expand1 rs =
       c <- choices2
       pure (rows1 <> [ row1 <> [ c ] : row2 ] <> rows2)
 
--- complete :: Matrix [Digit] -> Bool
--- complete = all (all single)
--- safe :: Matrix [Digit] -> Bool
--- safe cm = all ok (rows cm) &&
---           all ok (cols cm) &&
---           all ok (boxs cm)
--- ok row = nodups [x | [x] <- row]
+complete :: Matrix (Array Digit) -> Boolean
+complete = all (all single)
+
+ok :: Array (Array Digit) -> Boolean
+ok row = singletonsFromArr row # nodups
+
+safe :: Matrix (Array Digit) -> Boolean
+safe cm =
+  all ok (rows cm)
+    && all ok (cols cm)
+    && all ok (boxs cm)
+
+-- TODO fix extract; add types for extract & search
 -- extract :: Matrix [Digit] -> Grid
 -- extract = map (map head)
+-- extract :: Matrix (Array Digit) -> Grid
+extract = map (map (take 1))
+
 -- search cm
 --   | not (safe pm) = []
 --   | complete pm = [extract pm]
 --   | otherwise = concat (map search (expand1 pm))
 --   where pm = many prune cm
+-- TODO fix this type
+-- search :: Array (Array Digit) -> Array (Array Digit)
+search cm = search' (many prune cm)
+  where
+  search' pm
+    | not (safe pm) = []
+    | complete pm = [ extract pm ]
+    | otherwise = concat (map search (expand1 pm))
+
 solve :: Grid -> Array Grid
 -- solve = filter valid <<< expand <<< choices -- 5.1 Specification
 solve = filter valid <<< expand <<< many prune <<< choices -- 5.3 Pruning the matrix of choices

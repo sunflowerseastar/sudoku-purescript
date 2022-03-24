@@ -63,6 +63,32 @@ b3 =
   , [ 2, 3, 9, 0, 4, 1, 5, 6, 0 ] -- 0 => 7
   ]
 
+b3solution :: Grid
+b3solution =
+  [ [ 8, 2, 7, 1, 5, 4, 3, 9, 6 ]
+  , [ 9, 6, 5, 3, 2, 7, 1, 4, 8 ]
+  , [ 3, 4, 1, 6, 8, 9, 7, 5, 2 ]
+  , [ 5, 9, 3, 4, 6, 8, 2, 7, 1 ]
+  , [ 4, 7, 2, 5, 1, 3, 6, 8, 9 ]
+  , [ 6, 1, 8, 9, 7, 2, 4, 3, 5 ]
+  , [ 7, 8, 6, 2, 3, 5, 9, 1, 4 ]
+  , [ 1, 5, 4, 7, 9, 6, 8, 2, 3 ]
+  , [ 2, 3, 9, 8, 4, 1, 5, 6, 7 ]
+  ]
+
+b3a :: Grid
+b3a =
+  [ [ 8, 2, 7, 1, 5, 4, 3, 9, 6 ]
+  , [ 9, 6, 5, 3, 2, 7, 1, 4, 8 ]
+  , [ 3, 4, 1, 6, 8, 9, 7, 5, 2 ]
+  , [ 5, 9, 3, 4, 6, 8, 2, 7, 1 ]
+  , [ 4, 7, 2, 5, 1, 3, 6, 8, 9 ]
+  , [ 6, 1, 8, 9, 7, 2, 4, 3, 5 ]
+  , [ 7, 8, 6, 2, 3, 5, 9, 1, 4 ]
+  , [ 1, 5, 4, 7, 9, 6, 8, 2, 3 ]
+  , [ 2, 3, 9, 8, 4, 1, 5, 6, 0 ] -- 0 => 7
+  ]
+
 b3b :: Grid
 b3b =
   [ [ 8, 2, 7, 1, 5, 4, 3, 9, 6 ]
@@ -230,19 +256,17 @@ safe cm =
     && all ok (cols cm)
     && all ok (boxs cm)
 
--- TODO fix extract; add types for extract & search
--- extract :: Matrix [Digit] -> Grid
--- extract = map (map head)
--- extract :: Matrix (Array Digit) -> Grid
-extract = map (map (take 1))
+extract :: Matrix (Array Digit) -> Grid
+extract = map concat
 
 -- search cm
 --   | not (safe pm) = []
 --   | complete pm = [extract pm]
 --   | otherwise = concat (map search (expand1 pm))
 --   where pm = many prune cm
--- TODO fix this type
+-- TODO see if something is wrong with search; then finalize solve
 -- search :: Array (Array Digit) -> Array (Array Digit)
+search :: Matrix (Array Digit) -> Array Grid
 search cm = search' (many prune cm)
   where
   search' pm
@@ -253,8 +277,8 @@ search cm = search' (many prune cm)
 solve :: Grid -> Array Grid
 -- solve = filter valid <<< expand <<< choices -- 5.1 Specification
 solve = filter valid <<< expand <<< many prune <<< choices -- 5.3 Pruning the matrix of choices
-
 -- solve = search . choices -- 5.4 Expanding a single cell
+
 -- ---------
 -- UI
 -- ---------

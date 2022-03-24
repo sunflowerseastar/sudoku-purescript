@@ -205,8 +205,8 @@ pruneBy f = f <<< map pruneRow <<< f
 prune :: Matrix (Array Digit) -> Matrix (Array Digit)
 prune = pruneBy boxs <<< pruneBy cols <<< pruneBy rows
 
-many :: forall a. (Eq a) => (a -> a) -> a -> a
-many f x = if x == y then x else many f y
+fixedPoint :: forall a. (Eq a) => (a -> a) -> a -> a
+fixedPoint f x = if x == y then x else fixedPoint f y
   where
   y = f x
 
@@ -219,7 +219,7 @@ b2c = choices b2
 
 -- > break (\x -> x > 4) [1, 3, 7, 6, 2, 3, 5] => { init: [1,3], rest: [7,6,2,3,5] }
 break :: forall a. (a -> Boolean) -> Array a -> { init :: Array a, rest :: Array a }
-break p = span (not <<< p)
+break p = not <<< p # span
 
 expand1 :: Matrix (Array Digit) -> Matrix (Array (Array Digit))
 expand1 rs =
@@ -259,25 +259,18 @@ safe cm =
 extract :: Matrix (Array Digit) -> Grid
 extract = map concat
 
--- search cm
---   | not (safe pm) = []
---   | complete pm = [extract pm]
---   | otherwise = concat (map search (expand1 pm))
---   where pm = many prune cm
--- TODO see if something is wrong with search; then finalize solve
--- search :: Array (Array Digit) -> Array (Array Digit)
 search :: Matrix (Array Digit) -> Array Grid
-search cm = search' (many prune cm)
+search cm = search' (fixedPoint prune cm)
   where
   search' pm
     | not (safe pm) = []
     | complete pm = [ extract pm ]
-    | otherwise = concat (map search (expand1 pm))
+    | otherwise = expand1 pm # map search # concat
 
 solve :: Grid -> Array Grid
 -- solve = filter valid <<< expand <<< choices -- 5.1 Specification
-solve = filter valid <<< expand <<< many prune <<< choices -- 5.3 Pruning the matrix of choices
--- solve = search . choices -- 5.4 Expanding a single cell
+-- solve = filter valid <<< expand <<< fixedPoint prune <<< choices -- 5.3 Pruning the matrix of choices
+solve = search <<< choices -- 5.4 Expanding a single cell
 
 -- ---------
 -- UI

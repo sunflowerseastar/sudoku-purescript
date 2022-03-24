@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-import Data.Array (all, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, nub, take, uncons, updateAt, zipWith, (:), (..))
+import Data.Array (all, any, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, nub, span, take, uncons, updateAt, zipWith, (:), (..))
 import Data.Foldable (minimum)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
@@ -92,7 +92,6 @@ blank = (==) 0
 choices :: Grid -> Matrix (Array Digit)
 choices = map (map choice)
 
--- choice d = if blank d then digits else [d]
 choice :: Int -> Array Int
 choice d = if blank d then digits else [ d ]
 
@@ -156,9 +155,6 @@ valid g =
     && all nodups (cols g)
     && all nodups (boxs g)
 
--- single :: [a] -> Bool
--- single [_] = True
--- single _ = False
 single :: forall a. (Array a) -> Boolean
 single xs = length xs == 1
 
@@ -186,72 +182,59 @@ many f x = if x == y then x else many f y
   y = f x
 
 -- TODO add expand1, complete, safe, ok, extract, search
-
--- c = [[[0],[1,2],[3],[1,3,4],[5,6]],[[0],[1,2],[3],[1,3,4],[5,6]]]
--- counts c => [2,3,2,2,3,2]
+-- counts [[[0],[1,2],[3],[1,3,4],[5,6]],[[0],[1,2],[3],[1,3,4],[5,6]]] => [2,3,2,2,3,2]
 counts :: Array (Array (Array Int)) -> Array Int
 counts = filter (\x -> x /= 1) <<< map length <<< concat
 
-e1 rows = do
-  n <- rows # counts
-  pure n
-  -- n <- rows >>> counts >>> minimum
-  -- n <- counts rows # minimum
-  -- n <- pure rows <*> counts <*> minimum <*> fromMaybe 0
-  -- pure n
+b2c :: Array (Array (Array Int))
+b2c = choices b2
 
+-- > break (\x -> x > 4) [1, 3, 7, 6, 2, 3, 5] => { init: [1,3], rest: [7,6,2,3,5] }
+break :: forall a. (a -> Boolean) -> Array a -> { init :: Array a, rest :: Array a }
+break p = span (not <<< p)
 
--- prelude
--- break :: (a -> Bool) -> [a] -> ([a],[a])
--- break p = span (not . p)
--- break even [1, 3, 7, 6, 2, 3, 5] => ([1, 3, 7], [6, 2, 3, 5])
+expand1 :: Matrix (Array Digit) -> Matrix (Array (Array Digit))
+expand1 rs =
+  let
+    n = rs # counts >>> minimum >>> fromMaybe 0
 
--- expand1 :: Matrix [Digit] -> [Matrix [Digit]]
--- expand1 rows
---   = [rows1 ++ [row1 ++ [c]:row2] ++ rows2 | c <- choices]
---     where
---       (rows1, row:rows2) = break (any smallest) rows
---       (row1, choices:row2)    = break smallest row
---       smallest choices        = length choices == n
---       n                  = minimum (counts rows)
--- expand1 rows = do
---   n <-
---   c <- cs
---   pure c
---     where
---       cs = [1,2]
---       smallest cs        = length cs == n
---       n                  = minimum (counts rows)
+    smallest cs = length cs == n
 
---   = [rows1 ++ [row1 ++ [c]:row2] ++ rows2 | c <- cs]
---     where
---       (rows1, row:rows2) = break (any smallest) rows
---       (row1, cs:row2)    = break smallest row
+    { init: rows1, rest: rows2 } = break (any smallest) rs
+
+    row = case uncons rows2 of
+      Just { head: r, tail: _ } -> r
+      Nothing -> []
+
+    { init: row1, rest: row2 } = break smallest row
+
+    choices2 = case uncons row2 of
+      Just { head: cs, tail: _ } -> cs
+      Nothing -> []
+  in
+    do
+      c <- choices2
+      pure (rows1 <> [ row1 <> [ c ] : row2 ] <> rows2)
 
 -- complete :: Matrix [Digit] -> Bool
 -- complete = all (all single)
-
 -- safe :: Matrix [Digit] -> Bool
 -- safe cm = all ok (rows cm) &&
 --           all ok (cols cm) &&
 --           all ok (boxs cm)
-
 -- ok row = nodups [x | [x] <- row]
-
 -- extract :: Matrix [Digit] -> Grid
 -- extract = map (map head)
-
 -- search cm
 --   | not (safe pm) = []
 --   | complete pm = [extract pm]
 --   | otherwise = concat (map search (expand1 pm))
 --   where pm = many prune cm
-
 solve :: Grid -> Array Grid
 -- solve = filter valid <<< expand <<< choices -- 5.1 Specification
 solve = filter valid <<< expand <<< many prune <<< choices -- 5.3 Pruning the matrix of choices
--- solve = search . choices -- 5.4 Expanding a single cell
 
+-- solve = search . choices -- 5.4 Expanding a single cell
 -- ---------
 -- UI
 -- ---------

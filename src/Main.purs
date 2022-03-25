@@ -5,6 +5,8 @@ import Data.Array (all, any, concat, cons, drop, filter, length, mapWithIndex, m
 import Data.Foldable (minimum)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.String (replace)
+import Data.String.Pattern (Pattern(..), Replacement(..))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Elmish (Transition, Dispatch, ReactElement, forkVoid, (<?|))
@@ -310,7 +312,13 @@ squares dispatch y x s =
     ( H.input_ ""
         { type: "text"
         , value: if s == 0 then "" else show s
-        , onChange: dispatch <?| \f -> UpdateBoard x y <$> (eventTargetValue f >>= fromString)
+        , onChange:
+            dispatch
+              <?| \f ->
+                  eventTargetValue f
+                    <#> replace (Pattern (show s)) (Replacement "")
+                    >>= fromString
+                    <#> UpdateBoard x y
         }
     )
 

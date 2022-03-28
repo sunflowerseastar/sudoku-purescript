@@ -1,15 +1,14 @@
 module Main where
 
 import Prelude
-import Data.Array (all, any, concat, cons, drop, filter, length, mapWithIndex, modifyAt, notElem, nub, span, take, uncons, updateAt, zipWith, (:), (..))
+import Data.Array (all, any, concat, cons, drop, filter, head, length, mapWithIndex, modifyAt, notElem, nub, span, take, uncons, updateAt, zipWith, (:), (..))
 import Data.Foldable (minimum)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.String (replace)
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Effect (Effect)
-import Effect.Class.Console (log)
-import Elmish (Transition, Dispatch, ReactElement, forkVoid, (<?|))
+import Elmish (Transition, Dispatch, ReactElement, (<?|))
 import Elmish.Boot (defaultMain)
 import Elmish.Foreign (readForeign)
 import Elmish.HTML.Styled as H
@@ -309,12 +308,13 @@ type State
   = { board :: Grid }
 
 data Message
-  = ButtonClicked
+  = ClickSolve
   | UpdateBoard Int Int Int
 
 init :: Transition Message State
 init = pure { board: b3b }
 
+-- init = pure { board: b3x2NoSolutions }
 update :: State -> Message -> Transition Message State
 update state (UpdateBoard x y newValue) =
   pure
@@ -325,9 +325,8 @@ update state (UpdateBoard x y newValue) =
           # fromMaybe state.board
       }
 
-update state ButtonClicked = do
-  forkVoid $ log ("Button clicked :: " <> (show $ solve state.board))
-  pure state
+update state ClickSolve = do
+  pure state { board = state.board # solve >>> head >>> fromMaybe state.board }
 
 eventTargetValue :: Foreign -> Maybe String
 eventTargetValue f =
@@ -366,7 +365,7 @@ view state dispatch =
         ]
     , H.div "button-container"
         [ H.div "button-indicator"
-            [ H.button_ "" { onClick: dispatch ButtonClicked } "solve" ]
+            [ H.button_ "" { onClick: dispatch ClickSolve } "solve" ]
         ]
     ]
 

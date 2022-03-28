@@ -163,22 +163,14 @@ cp matrix = case uncons matrix of
     pure (cons x ys)
   Nothing -> [ [] ]
 
-factors :: Int -> Array (Array Int)
-factors n = do
-  i <- 1 .. n
-  j <- i .. n
-  pure [ i, j ]
-
 expand :: Matrix (Array Digit) -> Array Grid
 expand = cp <<< map cp
 
 completions :: Grid -> Array Grid
 completions = expand <<< choices
 
-nodups :: forall a. Eq a => Array a -> Boolean
-nodups arr = case uncons arr of
-  Just { head: x, tail: xs } -> all (_ /= x) xs
-  Nothing -> true
+nodups :: forall a. Ord a => Array a -> Boolean
+nodups arr = length arr == (length $ nub arr)
 
 rows :: forall a. Matrix a -> Matrix a
 rows = identity
@@ -220,7 +212,7 @@ remove singletons xs =
     filter (\x -> notElem x singletons) xs
 
 singletonsFromArr :: Array (Array Digit) -> Array Digit
-singletonsFromArr arr = arr # filter (\x -> length x == 1) # concat # nub
+singletonsFromArr arr = arr # filter (\x -> length x == 1) # concat
 
 pruneRow :: Array (Array Digit) -> Array (Array Digit)
 pruneRow row = map (remove singletonsFromArrArr) row
@@ -275,6 +267,7 @@ expand1 rs =
 complete :: Matrix (Array Digit) -> Boolean
 complete = all (all single)
 
+-- ok [[2],[3],[9],[8],[4],[1],[5],[6],[6]] => false
 ok :: Array (Array Digit) -> Boolean
 ok row = singletonsFromArr row # nodups
 
@@ -287,7 +280,6 @@ safe cm =
 extract :: Matrix (Array Digit) -> Grid
 extract = map concat
 
--- TODO verify broken boards don't work
 search :: Matrix (Array Digit) -> Array Grid
 search cm = search' (fixedPoint prune cm)
   where

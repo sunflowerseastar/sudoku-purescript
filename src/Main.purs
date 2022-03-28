@@ -297,14 +297,25 @@ solve = search <<< choices -- 5.4 Expanding a single cell
 -- UI
 -- ---------
 type State
-  = { board :: Grid }
+  = { board :: Grid
+    , currentBoardIndex :: Int
+    }
+
+data DecOrInc
+  = Dec
+  | Inc
 
 data Message
   = ClickSolve
   | UpdateBoard Int Int Int
+  | PreviousOrNextBoard DecOrInc
 
 init :: Transition Message State
-init = pure { board: b3b }
+init =
+  pure
+    { board: b3b
+    , currentBoardIndex: 0
+    }
 
 -- init = pure { board: b3x2NoSolutions }
 update :: State -> Message -> Transition Message State
@@ -315,6 +326,15 @@ update state (UpdateBoard x y newValue) =
         state.board
           # modifyAt y (\row -> fromMaybe row (updateAt x newValue row))
           # fromMaybe state.board
+      }
+
+update state (PreviousOrNextBoard decOrInc) =
+  pure
+    state
+      { currentBoardIndex =
+        case decOrInc of
+          Dec -> state.currentBoardIndex - 1
+          Inc -> state.currentBoardIndex + 1
       }
 
 update state ClickSolve = do
@@ -348,7 +368,14 @@ view :: State -> Dispatch Message -> ReactElement
 view state dispatch =
   H.div "main"
     [ H.div "board-container"
-        [ H.div "board constrain-width"
+        [ H.div "above-board constrain-width"
+            [ H.div "left"
+                [ H.a_ "arrow-left" { onClick: dispatch (PreviousOrNextBoard Dec) } "◀"
+                , H.a_ "arrow-right" { onClick: dispatch (PreviousOrNextBoard Inc) } "▶"
+                , H.span "em" ("board " <> (state.currentBoardIndex + 1 # show))
+                ]
+            ]
+        , H.div "board constrain-width"
             [ H.div "board-inner" $ state.board
                 # mapWithIndex (squares2 dispatch)
             , H.div "board-horizontal-lines" " "

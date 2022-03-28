@@ -1,7 +1,8 @@
 module Main where
 
 import Prelude
-import Boards (Grid, b3b, solve)
+import Boards (Grid, b3b)
+import Sudoku (solve)
 import Data.Array (head, mapWithIndex, modifyAt, updateAt)
 import Data.Int (fromString)
 import Data.Maybe (Maybe, fromMaybe)

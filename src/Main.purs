@@ -1,9 +1,9 @@
 module Main where
 
 import Prelude
-import Boards (Grid, b3b)
+import Boards (Grid, b1, boards)
 import Sudoku (solve)
-import Data.Array (head, mapWithIndex, modifyAt, updateAt)
+import Data.Array (head, length, mapWithIndex, modifyAt, updateAt, (!!))
 import Data.Int (fromString)
 import Data.Maybe (Maybe, fromMaybe)
 import Data.String (replace)
@@ -33,14 +33,19 @@ data Message
   | UpdateBoard Int Int Int
   | PreviousOrNextBoard DecOrInc
 
+initCurrentBoardIndex :: Int
+initCurrentBoardIndex = 0
+
+defaultBoard :: Grid
+defaultBoard = b1
+
 init :: Transition Message State
 init =
   pure
-    { board: b3b
-    , currentBoardIndex: 0
+    { currentBoardIndex: initCurrentBoardIndex
+    , board: boards !! initCurrentBoardIndex # fromMaybe defaultBoard
     }
 
--- init = pure { board: b3x2NoSolutions }
 update :: State -> Message -> Transition Message State
 update state (UpdateBoard x y newValue) =
   pure
@@ -52,13 +57,16 @@ update state (UpdateBoard x y newValue) =
       }
 
 update state (PreviousOrNextBoard decOrInc) =
-  pure
-    state
-      { currentBoardIndex =
-        case decOrInc of
-          Dec -> state.currentBoardIndex - 1
-          Inc -> state.currentBoardIndex + 1
-      }
+  let
+    newBoardIndex = case decOrInc of
+      Dec -> mod (state.currentBoardIndex - 1) (length boards)
+      Inc -> mod (state.currentBoardIndex + 1) (length boards)
+  in
+    pure
+      state
+        { currentBoardIndex = newBoardIndex
+        , board = boards !! newBoardIndex # fromMaybe defaultBoard
+        }
 
 update state ClickSolve = do
   pure state { board = state.board # solve >>> head >>> fromMaybe state.board }
@@ -70,6 +78,7 @@ eventTargetValue f =
 
 squares :: Dispatch Message -> Int -> Int -> Int -> ReactElement
 squares dispatch y x s =
+  -- TODO see if gridArea can be handled completely in css
   H.div_ "square" { style: H.css { gridArea: (show (y + 1)) <> " / " <> (show (x + 1)) <> " / auto / auto" } }
     ( H.input_ ""
         { type: "text"
@@ -95,7 +104,7 @@ view state dispatch =
             [ H.div "left"
                 [ H.a_ "arrow-left" { onClick: dispatch (PreviousOrNextBoard Dec) } "◀"
                 , H.a_ "arrow-right" { onClick: dispatch (PreviousOrNextBoard Inc) } "▶"
-                , H.span "em" ("board " <> (state.currentBoardIndex + 1 # show))
+                , H.span "em" ("board " <> (state.currentBoardIndex + 1 # show) <> " of " <> (boards # length >>> show))
                 ]
             ]
         , H.div "board constrain-width"

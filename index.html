@@ -1,4 +1,12 @@
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css" />
 <div id="app"></div>
 <script src="output/index.js"></script>
-<script>window.Main.main()</script>
+<script>
+  window.Main.main();
+
+  document.onreadystatechange = () => {
+    if (document.readyState === 'complete') {
+      document.querySelector('.main').classList.add('has-initially-loaded');
+    }
+  };
+</script>

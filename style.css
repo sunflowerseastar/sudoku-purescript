@@ -16,8 +16,7 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   box-sizing: border-box;
-  /* TODO add onLoad has-initially-loaded */
-  /* opacity: 0; */
+  opacity: 0;
   transition: opacity 1.6s ease-in-out;
 }
 .main.has-initially-loaded {
@@ -84,6 +83,8 @@ body {
   color: #333;
   cursor: default;
 }
+.above-board {
+}
 .above-board .left {
   position: relative;
   left: -3px;
@@ -107,33 +108,77 @@ body {
     font-size: 0.9em;
   }
 }
+.board {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border: 2px solid #222;
+}
+.board-inner {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-gap: 1px;
+  background: #ccc;
+  text-align: center;
+}
+.board-horizontal-lines,
+.board-vertical-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+}
+.board-horizontal-lines:before,
+.board-horizontal-lines:after,
+.board-vertical-lines:before,
+.board-vertical-lines:after {
+  content: '';
+  position: absolute;
+  background: #222;
+  z-index: 1;
+}
+.board-horizontal-lines:before,
+.board-horizontal-lines:after {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  height: 100%;
+}
+.board-horizontal-lines:before {
+  left: calc(33% - 1px);
+}
+.board-horizontal-lines:after {
+  right: calc(33% - 1px);
+}
+.board-vertical-lines:before,
+.board-vertical-lines:after {
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 2px;
+}
+.board-vertical-lines:before {
+  top: calc(33% - 1px);
+}
+.board-vertical-lines:after {
+  bottom: calc(33% - 1px);
+}
 .below-board {
 }
 .below-board .left {
   flex: 1;
   position: relative;
   left: -3px;
-  opacity: 1;
-  transition: opacity 0.2s ease-in-out;
-}
-.below-board .left.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-  cursor: default;
 }
 .below-board .right {
   text-align: right;
-}
-.board {
-  position: relative;
-  display: grid;
-  width: 100%;
-  height: 90vw;
-  margin: 0 auto;
-  text-align: center;
-  background: #222;
-  grid-gap: 1px;
-  border: 1px solid #222;
 }
 .constrain-width {
   width: 100%;
@@ -154,18 +199,10 @@ body {
     width: 62vh;
   }
 }
-@media (min-width: 480px) {
-  .board {
-    height: auto;
-    grid-template-rows: auto !important;
-  }
-}
 .square {
   position: relative;
   height: 0;
   padding-bottom: 100%;
-  border-right: 1px solid transparent;
-  border-bottom: 1px solid transparent;
   background: white;
 }
 input {
@@ -179,7 +216,7 @@ input {
   border-radius: 0;
   outline: none;
 }
-input[type=text]:focus {
+input[type='text']:focus {
   box-shadow: none;
   border: 0;
 }
@@ -265,10 +302,10 @@ button {
   }
 }
 button:hover {
-  top: -1px;
+  background: #333;
 }
 button:active {
-  top: 0px;
+  background: #444;
 }
 .em {
   font-style: italic;
@@ -281,4 +318,8 @@ button:active {
   opacity: 0.3;
   pointer-events: none;
   cursor: default;
+}
+.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }

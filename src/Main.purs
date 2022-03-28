@@ -288,6 +288,7 @@ safe cm =
 extract :: Matrix (Array Digit) -> Grid
 extract = map concat
 
+-- TODO verify broken boards don't work
 search :: Matrix (Array Digit) -> Array Grid
 search cm = search' (fixedPoint prune cm)
   where
@@ -356,7 +357,12 @@ view :: State -> Dispatch Message -> ReactElement
 view state dispatch =
   H.div "main"
     [ H.div "board-container"
-        [ H.div "board constrain-width" $ state.board # mapWithIndex (squares2 dispatch)
+        [ H.div "board constrain-width"
+            [ H.div "board-inner" $ state.board
+                # mapWithIndex (squares2 dispatch)
+            , H.div "board-horizontal-lines" " "
+            , H.div "board-vertical-lines" " "
+            ]
         ]
     , H.div "button-container"
         [ H.div "button-indicator"

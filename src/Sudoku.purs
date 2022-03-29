@@ -121,16 +121,24 @@ expand1 rs =
 
     smallest cs = length cs == n
 
-    { init: rows1, rest: rows2 } = break (any smallest) rs
+    { init: rows1, rest: rows2x } = break (any smallest) rs
 
-    row = case uncons rows2 of
-      Just { head: r, tail: _ } -> r
+    row = case uncons rows2x of
+      Just { head: rh, tail: _ } -> rh
       Nothing -> []
 
-    { init: row1, rest: row2 } = break smallest row
+    rows2 = case uncons rows2x of
+      Just { head: _, tail: rt } -> rt
+      Nothing -> []
 
-    choices2 = case uncons row2 of
-      Just { head: cs, tail: _ } -> cs
+    { init: row1, rest: row2x } = break smallest row
+
+    choices2 = case uncons row2x of
+      Just { head: csh, tail: _ } -> csh
+      Nothing -> []
+
+    row2 = case uncons row2x of
+      Just { head: _, tail: cst } -> cst
       Nothing -> []
   in
     do

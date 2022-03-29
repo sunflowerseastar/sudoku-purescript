@@ -9,7 +9,9 @@ import Data.Maybe (Maybe, fromMaybe)
 import Data.String (replace)
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Effect (Effect)
-import Elmish (Transition, Dispatch, ReactElement, (<?|))
+-- import Effect.Class.Console (log)
+import Elmish (Transition, Dispatch, ReactElement, fork, (<?|))
+-- import Elmish (Transition, Dispatch, ReactElement, forkMaybe, forkVoid, fork, (<?|))
 import Elmish.Boot (defaultMain)
 import Elmish.Foreign (readForeign)
 import Elmish.HTML.Styled as H
@@ -19,9 +21,16 @@ import Foreign (Foreign)
 -- ---------
 -- UI
 -- ---------
+-- TODO add UI states
 type State
-  = { board :: Grid
-    , currentBoardIndex :: Int
+  = { currentBoardIndex :: Int
+    , board :: Grid
+    , solutions :: Array Grid
+    , currentSolutionIndex :: Int
+    , isBoardPristine :: Boolean
+    , isSolving :: Boolean
+    , isSuccess :: Boolean
+    , hasInitiallyLoaded :: Boolean
     }
 
 data DecOrInc
@@ -32,6 +41,11 @@ data Message
   = ClickSolve
   | UpdateBoard Int Int Int
   | PreviousOrNextBoard DecOrInc
+  | ClearUI
+  | UpdateIsSolving Boolean
+  | SolveSuccess (Array Grid)
+  | SolveFailure
+  | Noop
 
 initCurrentBoardIndex :: Int
 initCurrentBoardIndex = 0
@@ -44,6 +58,12 @@ init =
   pure
     { currentBoardIndex: initCurrentBoardIndex
     , board: boards !! initCurrentBoardIndex # fromMaybe defaultBoard
+    , solutions: []
+    , currentSolutionIndex: 0
+    , isBoardPristine: true
+    , isSolving: false
+    , isSuccess: false
+    , hasInitiallyLoaded: false
     }
 
 update :: State -> Message -> Transition Message State
@@ -68,8 +88,56 @@ update state (PreviousOrNextBoard decOrInc) =
         , board = boards !! newBoardIndex # fromMaybe defaultBoard
         }
 
-update state ClickSolve = do
-  pure state { board = state.board # solve >>> head >>> fromMaybe state.board }
+update state ClearUI = do
+  -- TODO replace `head` with `solutions` (new state)... accommodate multiple solutions and solution navigation
+  pure
+    state
+      { isBoardPristine = true
+      , isSolving = false
+      , solutions = []
+      , currentSolutionIndex = 0
+      , isSuccess = false
+      }
+
+update state (UpdateIsSolving b) = do
+  pure state { isSolving = b }
+
+update state (SolveSuccess newSolutions) = do
+  pure
+    state
+      { board = newSolutions # head >>> fromMaybe state.board
+      , isBoardPristine = true
+      , isSolving = false
+      , solutions = newSolutions
+      , currentSolutionIndex = 0
+      , isSuccess = true
+      }
+
+update state SolveFailure = do
+  pure
+    state
+      { isSolving = false
+      , solutions = []
+      , currentSolutionIndex = 0
+      }
+
+update state Noop = do
+  pure state
+
+update state ClickSolve =
+  let
+    newSolutions = solve state.board
+  in
+    do
+      -- TODO replace `head` with `solutions` (new state)... accommodate multiple solutions and solution navigation
+      fork do
+        pure (UpdateIsSolving true)
+      fork do
+        if (length newSolutions > 0) then
+          pure (SolveSuccess (solve state.board))
+        else
+          pure SolveFailure
+      pure state
 
 eventTargetValue :: Foreign -> Maybe String
 eventTargetValue f =
@@ -115,7 +183,12 @@ view state dispatch =
             ]
         ]
     , H.div "button-container"
-        [ H.div "button-indicator"
+        [ H.div_ ""
+            { className:
+                "button-indicator "
+                  <> (if state.isSuccess then "is-success" else "")
+                  <> (if state.isSolving then "is-solving" else "")
+            }
             [ H.button_ "" { onClick: dispatch ClickSolve } "solve" ]
         ]
     ]

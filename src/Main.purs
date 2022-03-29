@@ -21,7 +21,6 @@ import Foreign (Foreign)
 -- ---------
 -- UI
 -- ---------
--- TODO add UI states
 type State
   = { currentBoardIndex :: Int
     , board :: Grid
@@ -42,7 +41,6 @@ data Message
   | UpdateBoard Int Int Int
   | PreviousOrNextBoard DecOrInc
   | PreviousOrNextSolution DecOrInc
-  | ClearUI
   | UpdateIsSolving Boolean
   | SolveSuccess (Array Grid)
   | SolveFailure
@@ -75,6 +73,9 @@ update state (UpdateBoard x y newValue) =
         state.board
           # modifyAt y (\row -> fromMaybe row (updateAt x newValue row))
           # fromMaybe state.board
+      , isSolving = false
+      , solutions = []
+      , isSuccess = false
       }
 
 update state (PreviousOrNextSolution decOrInc) =
@@ -99,17 +100,11 @@ update state (PreviousOrNextBoard decOrInc) =
       state
         { currentBoardIndex = newBoardIndex
         , board = boards !! newBoardIndex # fromMaybe state.board
+        , isBoardPristine = true
+        , isSolving = false
+        , solutions = []
+        , isSuccess = false
         }
-
-update state ClearUI = do
-  pure
-    state
-      { isBoardPristine = true
-      , isSolving = false
-      , solutions = []
-      , currentSolutionIndex = 0
-      , isSuccess = false
-      }
 
 update state (UpdateIsSolving b) = do
   pure state { isSolving = b }

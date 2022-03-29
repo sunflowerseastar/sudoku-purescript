@@ -41,6 +41,7 @@ data Message
   = ClickSolve
   | UpdateBoard Int Int Int
   | PreviousOrNextBoard DecOrInc
+  | PreviousOrNextSolution DecOrInc
   | ClearUI
   | UpdateIsSolving Boolean
   | SolveSuccess (Array Grid)
@@ -76,6 +77,18 @@ update state (UpdateBoard x y newValue) =
           # fromMaybe state.board
       }
 
+update state (PreviousOrNextSolution decOrInc) =
+  let
+    newSolutionIndex = case decOrInc of
+      Dec -> mod (state.currentSolutionIndex - 1) (length state.solutions)
+      Inc -> mod (state.currentSolutionIndex + 1) (length state.solutions)
+  in
+    pure
+      state
+        { currentSolutionIndex = newSolutionIndex
+        , board = state.solutions !! newSolutionIndex # fromMaybe defaultBoard
+        }
+
 update state (PreviousOrNextBoard decOrInc) =
   let
     newBoardIndex = case decOrInc of
@@ -85,11 +98,10 @@ update state (PreviousOrNextBoard decOrInc) =
     pure
       state
         { currentBoardIndex = newBoardIndex
-        , board = boards !! newBoardIndex # fromMaybe defaultBoard
+        , board = boards !! newBoardIndex # fromMaybe state.board
         }
 
 update state ClearUI = do
-  -- TODO replace `head` with `solutions` (new state)... accommodate multiple solutions and solution navigation
   pure
     state
       { isBoardPristine = true
@@ -129,7 +141,6 @@ update state ClickSolve =
     newSolutions = solve state.board
   in
     do
-      -- TODO replace `head` with `solutions` (new state)... accommodate multiple solutions and solution navigation
       fork do
         pure (UpdateIsSolving true)
       fork do
@@ -180,6 +191,16 @@ view state dispatch =
                 # mapWithIndex (squares2 dispatch)
             , H.div "board-horizontal-lines" " "
             , H.div "board-vertical-lines" " "
+            ]
+        , H.div "below-board constrain-width"
+            [ H.div_ "" { className: "left " <> (if state.isSuccess then "" else "is-hidden") } case length state.solutions of
+                0 -> [ H.span "em" "no solutions" ]
+                1 -> [ H.span "em" "1 solution" ]
+                _ ->
+                  [ H.a_ "arrow-left" { onClick: dispatch (PreviousOrNextSolution Dec) } "◀"
+                  , H.a_ "arrow-right" { onClick: dispatch (PreviousOrNextSolution Inc) } "▶"
+                  , H.span "em" ("solution " <> (state.currentSolutionIndex # (\x -> x + 1) >>> show) <> " of " <> (state.solutions # length >>> show))
+                  ]
             ]
         ]
     , H.div "button-container"

@@ -2,10 +2,11 @@
   "name": "sudoku-purescript",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
+    "build": "spago bundle-module --to output/spago-bundle-module-output.js && esbuild output/spago-bundle-module-output.js --bundle --minify --outfile=public/dist/index.js --global-name=Main",
     "start": "spago build && esbuild ./output/Main/index.js --bundle --serve --servedir=. --outfile=output/index.js --global-name=Main",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "spago build --watch"
   },
   "keywords": [],
   "author": "",

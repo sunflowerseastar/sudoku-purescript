@@ -29,6 +29,7 @@ type State
     , isBoardPristine :: Boolean
     , isSolving :: Boolean
     , isSuccess :: Boolean
+    , isNoSolution :: Boolean
     , hasInitiallyLoaded :: Boolean
     }
 
@@ -62,6 +63,7 @@ init =
     , isBoardPristine: true
     , isSolving: false
     , isSuccess: false
+    , isNoSolution: false
     , hasInitiallyLoaded: false
     }
 
@@ -76,6 +78,7 @@ update state (UpdateBoard x y newValue) =
       , isSolving = false
       , solutions = []
       , isSuccess = false
+      , isNoSolution = false
       }
 
 update state (PreviousOrNextSolution decOrInc) =
@@ -104,6 +107,7 @@ update state (PreviousOrNextBoard decOrInc) =
         , isSolving = false
         , solutions = []
         , isSuccess = false
+        , isNoSolution = false
         }
 
 update state (UpdateIsSolving b) = do
@@ -118,12 +122,14 @@ update state (SolveSuccess newSolutions) = do
       , solutions = newSolutions
       , currentSolutionIndex = 0
       , isSuccess = true
+      , isNoSolution = false
       }
 
 update state SolveFailure = do
   pure
     state
       { isSolving = false
+      , isNoSolution = true
       , solutions = []
       , currentSolutionIndex = 0
       }
@@ -188,9 +194,9 @@ view state dispatch =
             , H.div "board-vertical-lines" " "
             ]
         , H.div "below-board constrain-width"
-            [ H.div_ "" { className: "left " <> (if state.isSuccess then "" else "is-hidden") } case length state.solutions of
-                0 -> [ H.span "em" "no solutions" ]
-                1 -> [ H.span "em" "1 solution" ]
+            [ H.div_ "" { className: "left " <> (if state.isSuccess || state.isNoSolution then "" else "is-hidden") } case length state.solutions of
+                0 -> [ H.span "em" "no solutions found" ]
+                1 -> [ H.span "em" "1 solution found" ]
                 _ ->
                   [ H.a_ "arrow-left" { onClick: dispatch (PreviousOrNextSolution Dec) } "◀"
                   , H.a_ "arrow-right" { onClick: dispatch (PreviousOrNextSolution Inc) } "▶"
@@ -204,6 +210,7 @@ view state dispatch =
                 "button-indicator "
                   <> (if state.isSuccess then "is-success" else "")
                   <> (if state.isSolving then "is-solving" else "")
+                  <> (if state.isNoSolution then "is-no-solution" else "")
             }
             [ H.button_ "" { onClick: dispatch ClickSolve } "solve" ]
         ]
